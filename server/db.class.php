@@ -4,7 +4,7 @@
         public $error_msg = "";
         
         private $hostname = "localhost";
-        private $databasename = "thislike";
+        private $databasename = "educonnect";
         private $username = "root";
         private $password = "";
 

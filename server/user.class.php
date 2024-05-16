@@ -1,6 +1,7 @@
 <?php
 
 class user {
+  //Table user
   public $rowid = '';
   public $userid = '';
   public $password = '';
@@ -99,12 +100,14 @@ class user {
       if (!isset($_SESSION['rowid'])) { throw new Exception("[Error] rowid not assigned"); }
       if (!isset($_SESSION['userid'])) { throw new Exception("[Error] userid not assigned"); }
       if (!isset($_SESSION['otp'])) { throw new Exception("[Error] otp not assigned"); }
+      if (!isset($_SESSION['role'])) { throw new Exception("[Error] otp not assigned"); }
 
       $this->rowid = $_SESSION['rowid'];
       $this->userid = $_SESSION['userid'];
       $this->otp = $_SESSION['otp'];
+      $this->role = $_SESSION['role'];
 
-      $data = $this->db->sql_select("SELECT rowid FROM user WHERE rowid='$this->rowid' AND userid='$this->userid' AND otp='$this->otp'");
+      $data = $this->db->sql_select("SELECT rowid FROM user WHERE rowid='$this->rowid' AND userid='$this->userid' AND otp='$this->otp' AND `role`='$this->role'");
 
       if (count($data) == 0) { throw new Exception("[Error] session dat not macthing"); }
 
@@ -122,6 +125,7 @@ class user {
       $_SESSION['rowid'] = $this->rowid;
       $_SESSION['userid'] = $this->userid;
       $_SESSION['otp'] = $this->otp;
+      $_SESSION['role'] = $this->role;
 
       return true;
     } catch (Exception $e) {
@@ -150,8 +154,9 @@ class user {
       if (!$this->is_login()) { throw new Exception("[Warning] Please login first"); }
       if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
+      if ($this->role == "") { throw new Exception("[Error] role not assigned"); }
       
-      if (!$this->db->sql_command("UPDATE user SET userid='$this->userid' WHERE rowid='$this->rowid'")) {
+      if (!$this->db->sql_command("UPDATE user SET userid='$this->userid', `role`='$this->role', fullname='$this->fullname', gender='$this->gender', ic='$this->ic', birthday='$this->birthday' WHERE rowid='$this->rowid'")) {
         throw new Exception("[Error] failed to update table");
       }
 
@@ -220,6 +225,90 @@ class user {
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());
       return false;
+    }
+  }
+
+  function option_user() {
+    try {
+      $ret_html = "";
+      foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user ORDER BY userid") as $val) {
+        $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname<option>";
+      }
+
+      return $ret_html;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return "";
+    }
+  }
+
+  function tc_deactive_list() {
+    $ret_html = "<tr>
+        <th>User ID</th>
+        <th>Role</th>
+        <th>Fullname</th>
+        <th>Student</th>
+        <th>Activate</th>
+      </tr>";
+    try {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, A.role, A.fullname, CONCAT(C.userid, ' - ', C.fullname) AS student FROM user A LEFT JOIN user_relate B ON A,rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.active='N'") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>" . $val['userid'] . "</td>"
+          .  "<td>" . $val['role'] . "</td>"
+          .  "<td>" . $val['fullname'] . "</td>"
+          .  "<td>" . $val['student'] . "</td>"
+          .  "<td><button onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+    }
+    return $ret_html;
+  }
+
+  function option_teacher() {
+    try {
+      $ret_html = "";
+      foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user WHERE role='teacher' ORDER BY userid") as $val) {
+        $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname<option>";
+      }
+
+      return $ret_html;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return "";
+    }
+  }
+
+  function option_student() {
+    try {
+      $ret_html = "";
+      foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user WHERE role='student' ORDER BY userid") as $val) {
+        $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname<option>";
+      }
+
+      return $ret_html;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return "";
+    }
+  }
+
+  function option_heir() {
+    try {
+      $ret_html = "";
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE role='heir' ORDER BY userid") as $val) {
+        $remark = $val['type'] == "" ? " - " . $val['student'] . " " . $val['type'] : "";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$remark<option>";
+      }
+
+      return $ret_html;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return "";
     }
   }
 

@@ -96,7 +96,8 @@
       success: function (response) {
         console.log(response);
         if (response.result) {
-          location.replace("index.php");
+          alert("Please wait to getting account activation by teacher");
+          //location.replace("index.php");
         } else {
           alert(response.reason);
         }

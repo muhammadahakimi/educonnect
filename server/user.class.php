@@ -134,6 +134,24 @@ class user {
     }
   }
 
+  function logout() {
+    try {
+      if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+
+      $_SESSION['rowid'] = $this->rowid;
+      $_SESSION['userid'] = $this->userid;
+      $_SESSION['otp'] = $this->otp;
+      $_SESSION['role'] = $this->role;
+
+      session_destroy();
+
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
+  }
+
   function update_otp() {
     try {
       if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
@@ -167,7 +185,7 @@ class user {
     }
   }
 
-  function change_password($password) {
+  function reset_password($password) {
     try {
       if (!$this->is_login()) { throw new Exception("[Warning] Please login first"); }
       if ($password == "") { throw new Exception("[Error] password not assigned"); }
@@ -243,6 +261,48 @@ class user {
     }
   }
 
+  function activate($rowid) {
+    try {
+      if (!$this->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($this->role != "teacher") { throw new Exception("[Warning] just teacher can activate user"); }
+      if ($rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+      if (!is_numeric($rowid)) { throw new Exception("[Error] Invalid rowid"); }
+      
+      if (!$this->db->sql_command("UPDATE user SET active='Y' WHERE rowid='$rowid'")) {
+        throw new Exception("[Error] failed to update table user");
+      }
+
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
+  }
+
+  function tc_list() {
+    $ret_html = "<tr>
+        <th>User ID</th>
+        <th>Role</th>
+        <th>Fullname</th>
+        <th>Student</th>
+        <th>Activate</th>
+      </tr>";
+    try {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, A.role, A.fullname, CONCAT(C.userid, ' - ', C.fullname) AS student FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.active='N'") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>" . $val['userid'] . "</td>"
+          .  "<td>" . $val['role'] . "</td>"
+          .  "<td>" . $val['fullname'] . "</td>"
+          .  "<td>" . $val['student'] . "</td>"
+          .  "<td><button onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+    }
+    return $ret_html;
+  }
+
   function tc_deactive_list() {
     $ret_html = "<tr>
         <th>User ID</th>
@@ -252,13 +312,13 @@ class user {
         <th>Activate</th>
       </tr>";
     try {
-      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, A.role, A.fullname, CONCAT(C.userid, ' - ', C.fullname) AS student FROM user A LEFT JOIN user_relate B ON A,rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.active='N'") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, A.role, A.fullname, CONCAT(C.userid, ' - ', C.fullname) AS student FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.active='N'") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['userid'] . "</td>"
           .  "<td>" . $val['role'] . "</td>"
           .  "<td>" . $val['fullname'] . "</td>"
           .  "<td>" . $val['student'] . "</td>"
-          .  "<td><button onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
+          .  "<td><button style='display:block;margin:auto;' onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {

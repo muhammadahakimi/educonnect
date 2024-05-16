@@ -5,3 +5,7 @@ function loadingStart() {
 function loadingEnd() {
   console.log("Loading End");
 }
+
+function page(name) {
+  location.replace(name + ".php");
+}

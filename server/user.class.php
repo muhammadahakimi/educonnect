@@ -415,7 +415,7 @@ class user {
           .  "<td>" . $val['role'] . "</td>"
           .  "<td>" . $val['fullname'] . "</td>"
           .  "<td>" . $val['student'] . "</td>"
-          .  "<td><button class='btn_remove' style='display:block;margin:auto;' onclick=\"deactivate_user('" . $val['rowid'] . "')\">Deactivate</button></td>"
+          .  "<td><button class='btn_remove' onclick=\"deactivate_user('" . $val['rowid'] . "')\">Deactivate</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {
@@ -439,7 +439,7 @@ class user {
           .  "<td>" . $val['role'] . "</td>"
           .  "<td>" . $val['fullname'] . "</td>"
           .  "<td>" . $val['student'] . "</td>"
-          .  "<td><button style='display:block;margin:auto;' onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
+          .  "<td><button onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {
@@ -458,14 +458,14 @@ class user {
         <th>Remove</th>
       </tr>";
     try {
-      foreach ($this->db->sql_select("SELECT A.rowid, A.type, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, date_format(A.create_date,'%d %b %y') AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.type, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['student'] . "</td>"
           .  "<td>" . $val['heir'] . "</td>"
           .  "<td align='center'>" . ucwords($val['type']) . "</td>"
           .  "<td align='center'>" . $val['create_date'] . "</td>"
           .  "<td>" . $val['create_user'] . "</td>"
-          .  "<td><button class='btn_remove' style='display:block;margin:auto;' onclick=\"remove_heir('" . $val['rowid'] . "')\">Remove</button></td>"
+          .  "<td><button class='btn_remove' onclick=\"remove_heir('" . $val['rowid'] . "')\">Remove</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {
@@ -507,7 +507,7 @@ class user {
   function option_heir() {
     try {
       $ret_html = "";
-      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.role='heir' AND active='Y' ORDER BY userid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.role='heir' AND A.active='Y' ORDER BY userid") as $val) {
         $remark = $val['type'] == "" ? " - " . $val['student'] . " " . $val['type'] : "";
         $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$remark</option>";
       }

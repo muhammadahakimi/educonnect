@@ -100,14 +100,22 @@ class classs{
       .  "<th>Name</th>"
       .  "<th>Subject</th>"
       .  "<th>Teacher</th>"
+      .  "<th>Total Student</th>"
+      .  "<th>Manage</th>"
+      .  "<th>Homework</th>"
+      .  "<th>Exam</th>"
       ."</tr>";
     try {
-      foreach ($this->db->sql_select("SELECT A.rowid, A.name, C.name, CONCAT(B.userid, ' - ', B.fullname) AS teacher FROM class A LEFT JOIN user B ON A.teacher=B.rowid LEFT JOIN `subject` C ON A.subject_rowid=C.rowid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.name, CONCAT(B.userid, ' - ', B.fullname) AS teacher, C.name AS `subject`, (SELECT COUNT(*) FROM class_student WHERE class_rowid=A.rowid) AS student FROM class A LEFT JOIN user B ON A.teacher_rowid=B.rowid LEFT JOIN `subject` C ON A.subject_rowid=C.rowid") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['rowid'] . "</td>"
           .  "<td>" . $val['name'] . "</td>"
           .  "<td>" . $val['subject'] . "</td>"
           .  "<td>" . $val['teacher'] . "</td>"
+          .  "<td>" . $val['student'] . "</td>"
+          .  "<td><button style='display:block;margin:auto;'>Manage</button></td>"
+          .  "<td><button style='display:block;margin:auto;'>Homework</button></td>"
+          .  "<td><button style='display:block;margin:auto;'>Exam</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {

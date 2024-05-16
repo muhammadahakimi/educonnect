@@ -1,13 +1,15 @@
 <?php
   include 'server/user.class.php';
+  include 'server/classs.class.php';
   $user = new user();
+  $class = new classs();
 
   if (!$user->is_login()) { header("Location: login.php"); }
   if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
-  <title>Manage User</title>
+  <title>Manage Class</title>
   <link rel="stylesheet" href="css/setup.css">
   <script src="jquery/jquery.js"></script>
   <script src="js/setup.js"></script>
@@ -33,11 +35,9 @@
 <body>
   <div>
     <button onclick="page('index')">&#8592; Home</button>
-    <button onclick="page('heir')">Heir</button>
-    <button onclick="page('activate_user')">Activate User</button>
-    <button onclick="page('deactivate_user')">Deactivate User</button>
-    <h3 align="center">User List</h3>
-    <table id="table_deactive" class="table2"><?php print $user->tc_list(); ?></table>
+    <button onclick="page('')">Manage Subject</button>
+    <h3 align="center">Class List</h3>
+    <table id="table_deactive" class="table1"><?php print $class->tc_list(); ?></table>
   </div>
 </body>
 <script>

@@ -3,7 +3,7 @@
   $user = new user();
 
   if (!$user->is_login()) { header("Location: login.php"); }
-  if (!$user->role != "teacher") { header("Location: access_denied.php"); }
+  if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
@@ -43,9 +43,9 @@
 </head>
 <body>
   <div>
-    <button onclick="page('index')">&#8592; Home</button>
+    <button onclick="page('manage_user')">&#8592; Manage User</button>
     <h3 align="center">User Active List</h3>
-    <table id="table_active" class="table1"><?php print $user->tc_active_list(); ?></table>
+    <table id="table_active" class="table2"><?php print $user->tc_active_list(); ?></table>
   </div>
 </body>
 <script>

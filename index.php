@@ -30,7 +30,7 @@
   <button onclick="page('my_profile')">My Profile</button>
   <button onclick="page('manage_user')">Manage User</button>
   <button onclick="page('subject')">Subject</button>
-  <button onclick="page('class')">Class</button>
+  <button onclick="page('manage_class')">Manage Class</button>
   <button onclick="page('exam')">Exam</button>
 </body>
 <script>

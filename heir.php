@@ -3,7 +3,7 @@
   $user = new user();
 
   if (!$user->is_login()) { header("Location: login.php"); }
-  if (!$user->role != "teacher") { header("Location: access_denied.php"); }
+  if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
@@ -60,7 +60,7 @@
 </head>
 <body>
   <div>
-    <button onclick="page('index')">&#8592; Home</button>
+    <button onclick="page('manage_user')">&#8592; Manage User</button>
     <div id="form">
       <label>Student</label>
       <select id="input_student"><?php print $user->option_student(); ?></select> 
@@ -76,7 +76,7 @@
       <button onclick="set_heir()">Set Heir</button>
     </div>
     <h3 align="center">Student Heir List</h3>
-    <table id="table_relate" class="table1"><?php print $user->tc_user_relate_list(); ?></table>
+    <table id="table_relate" class="table2"><?php print $user->tc_user_relate_list(); ?></table>
   </div>
 </body>
 <script>

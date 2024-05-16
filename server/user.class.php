@@ -14,6 +14,9 @@ class user {
   public $lastlog = '';
   public $active = '';
 
+  //Table user_relate
+  public $relate_rowid = ''; //user_relate.rowid
+
 
   private $db;
   public $error_msg = '';
@@ -61,6 +64,7 @@ class user {
       $this->password = $password != "" ? $password : $this->password;
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
       if ($this->password == "") { throw new Exception("[Error] password not assigned"); }
+      $this->userid = strtolower($this->userid);
       if (!$this->auth()) { throw new Exception("[Error] failed to authentication"); }
       if (!$this->set_details()) { throw new Exception("[Error] failed to set details"); }
       if (!$this->update_otp()) { throw new Exception("[Error] failed to update otp"); }
@@ -173,6 +177,10 @@ class user {
       if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
       if ($this->role == "") { throw new Exception("[Error] role not assigned"); }
+      $this->fullname = ucwords($this->fullname);
+      $this->userid = strtolower($this->userid);
+      if ($this->userid_exists()) { throw new Exception("[Error] userid is taken"); }
+      
       
       if (!$this->db->sql_command("UPDATE user SET userid='$this->userid', `role`='$this->role', fullname='$this->fullname', gender='$this->gender', ic='$this->ic', birthday='$this->birthday' WHERE rowid='$this->rowid'")) {
         throw new Exception("[Error] failed to update table");
@@ -230,16 +238,64 @@ class user {
     }
   }
 
+  function set_heir($student, $heir, $type) {
+    try {
+      if (!$this->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($this->role != "teacher") { throw new Exception("[Warning] just teacher can set user_relate"); }
+      if ($student == "") { throw new Exception("[Error] student not assigned"); }
+      if ($heir == "") { throw new Exception("[Error] heir not assigned"); }
+      if (!is_numeric($student)) { throw new Exception("[Error] Invalid student_rowid"); }
+      if (!is_numeric($heir)) { throw new Exception("[Error] Invalid heir_rowid"); }
+      if ($student == $heir) { throw new Exception("[Error] student and heir cannot be same person"); }
+
+      if($this->heir_exists($student, $heir)) {
+        if (!$this->db->sql_command("UPDATE user_relate SET `type`='$type', create_date=NOW(), create_user='$this->rowid' WHERE rowid='$this->relate_rowid'")) {
+          throw new Exception("[Error] failed to update table user_relate");
+        }
+      } else {
+        if (!$this->db->sql_command("INSERT INTO user_relate (student_rowid, heir_rowid, `type`, create_user) VALUES ('$student','$heir','$type','$this->rowid')")) {
+          throw new Exception("[Error] failed to insert table user_relate");
+        }
+      }
+     
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
+  }
+
   function userid_exists() {
     try {
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
-    $data = $this->db->sql_select("SELECT rowid FROM user WHERE userid='$this->userid'");
+      $data = $this->db->sql_select("SELECT rowid FROM user WHERE userid='$this->userid' AND rowid<>'$this->rowid'");
 
-    if (count($data) > 0) {
-      return true;
-    } else {
+      if (count($data) > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
       return false;
     }
+  }
+
+  function heir_exists($student, $heir) {
+    try {
+      if ($student == "") { throw new Exception("[Error] student not assigned"); }
+      if ($heir == "") { throw new Exception("[Error] heir not assigned"); }
+      if (!is_numeric($student)) { throw new Exception("[Error] Invalid student_rowid"); }
+      if (!is_numeric($heir)) { throw new Exception("[Error] Invalid heir_rowid"); }
+
+      $data = $this->db->sql_select("SELECT rowid FROM user_relate WHERE student_rowid='$student' AND heir_rowid='$heir'");
+
+      if (count($data) > 0) {
+        $this->relate_rowid = $data[0]['rowid'];
+        return true;
+      } else {
+        return false;
+      }
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());
       return false;
@@ -327,12 +383,38 @@ class user {
     return $ret_html;
   }
 
+  function tc_user_relate_list() {
+    $ret_html = "<tr>
+        <th>Student</th>
+        <th>Heir</th>
+        <th>Relationship</th>
+        <th>Create Date</th>
+        <th>Create By</th>
+        <th>Remove</th>
+      </tr>";
+    try {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.type, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, date_format(A.create_date,'%d-%b-%y') AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>" . $val['student'] . "</td>"
+          .  "<td>" . $val['heir'] . "</td>"
+          .  "<td align='center'>" . ucwords($val['type']) . "</td>"
+          .  "<td align='center'>" . $val['create_date'] . "</td>"
+          .  "<td>" . $val['create_user'] . "</td>"
+          .  "<td><button class='btn_remove' style='display:block;margin:auto;' onclick=\"remove_heir('" . $val['rowid'] . "')\">Remove</button></td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+    }
+    return $ret_html;
+  }
+
   function option_teacher() {
     try {
       $ret_html = "";
       foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user WHERE role='teacher' ORDER BY userid") as $val) {
         $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
-        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname<option>";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname</option>";
       }
 
       return $ret_html;
@@ -347,7 +429,7 @@ class user {
       $ret_html = "";
       foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user WHERE role='student' ORDER BY userid") as $val) {
         $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
-        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname<option>";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname</option>";
       }
 
       return $ret_html;
@@ -360,9 +442,9 @@ class user {
   function option_heir() {
     try {
       $ret_html = "";
-      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE role='heir' ORDER BY userid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.role='heir' ORDER BY userid") as $val) {
         $remark = $val['type'] == "" ? " - " . $val['student'] . " " . $val['type'] : "";
-        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$remark<option>";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$remark</option>";
       }
 
       return $ret_html;

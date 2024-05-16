@@ -28,22 +28,33 @@
       background: white;
       color: dodgerblue;
     }
+
+    .btn_remove {
+      border: 2px solid red;
+      background: red;
+      color: white;
+    }
+
+    .btn_remove:hover {
+      background: white;
+      color: red;
+    }
   </style>
 </head>
 <body>
   <div>
     <button onclick="page('index')">&#8592; Home</button>
-    <h3 align="center">User Deactive List</h3>
-    <table id="table_deactive" class="table1"><?php print $user->tc_deactive_list(); ?></table>
+    <h3 align="center">User Active List</h3>
+    <table id="table_active" class="table1"><?php print $user->tc_active_list(); ?></table>
   </div>
 </body>
 <script>
-  function activate_user(rowid) {
+  function deactivate_user(rowid) {
     var data = {};
     data['rowid'] = rowid;
     console.table(data);
     $.ajax({
-      url: 'server/activate_user.php',
+      url: 'server/deactivate_user.php',
       type: 'post',
       data: data,
       dataType: 'JSON',
@@ -51,7 +62,7 @@
         console.log(response);
         if (response.result) {
           alert("Successful");
-          $("#table_deactive > tbody").html(response.gui);
+          $("#table_active > tbody").html(response.gui);
         } else {
           alert(response.reason);
         }

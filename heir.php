@@ -3,6 +3,7 @@
   $user = new user();
 
   if (!$user->is_login()) { header("Location: login.php"); }
+  if (!$user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
@@ -87,6 +88,27 @@
     console.table(data);
     $.ajax({
       url: 'server/set_heir.php',
+      type: 'post',
+      data: data,
+      dataType: 'JSON',
+      success: function (response) {
+        console.log(response);
+        if (response.result) {
+          alert("Successful");
+          $("#table_relate > tbody").html(response.gui);
+        } else {
+          alert(response.reason);
+        }
+      }
+    });
+  }
+
+  function remove_heir(rowid) {
+    var data = {};
+    data['rowid'] = rowid;
+    console.table(data);
+    $.ajax({
+      url: 'server/remove_heir.php',
       type: 'post',
       data: data,
       dataType: 'JSON',

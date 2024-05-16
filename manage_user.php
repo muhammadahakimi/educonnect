@@ -33,8 +33,11 @@
 <body>
   <div>
     <button onclick="page('index')">&#8592; Home</button>
+    <button onclick="page('heir')">Heir</button>
+    <button onclick="page('activate_user')">Activate User</button>
+    <button onclick="page('deactivate_user')">Deactivate User</button>
     <h3 align="center">User Deactive List</h3>
-    <table id="table_deactive" class="table1"><?php print $user->tc_deactive_list(); ?></table>
+    <table id="table_deactive" class="table1"><?php print $user->tc_list(); ?></table>
   </div>
 </body>
 <script>

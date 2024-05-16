@@ -265,6 +265,22 @@ class user {
     }
   }
 
+  function remove_heir($rowid) {
+    try {
+      if (!$this->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($this->role != "teacher") { throw new Exception("[Warning] just teacher can set user_relate"); }
+      if ($rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+      if (!$this->db->sql_command("DELETE FROM user_relate WHERE rowid='$rowid'")) {
+        throw new Exception("[Error] failed to delete rowid: $rowid from table user_relate");
+      }
+
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
+  }
+
   function userid_exists() {
     try {
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
@@ -335,7 +351,56 @@ class user {
     }
   }
 
+  function deactivate($rowid) {
+    try {
+      if (!$this->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($this->role != "teacher") { throw new Exception("[Warning] just teacher can activate user"); }
+      if ($rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+      if (!is_numeric($rowid)) { throw new Exception("[Error] Invalid rowid"); }
+      
+      if (!$this->db->sql_command("UPDATE user SET active='N' WHERE rowid='$rowid'")) {
+        throw new Exception("[Error] failed to update table user");
+      }
+
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
+  }
+
   function tc_list() {
+    $ret_html = "<tr>
+        <th>User ID</th>
+        <th>Fullname</th>
+        <th>Role</th>
+        <th>Gender</th>
+        <th>IC No</th>
+        <th>Birthday</th>
+        <th>Last Login</th>
+        <th>Active</th>
+      </tr>";
+    try {
+      foreach ($this->db->sql_select("SELECT *, date_format(birthday,'%d-%b-%y') AS birthday, CONCAT(DATE_FORMAT(lastlog,'%d %b %y'), ' - ',TIME_FORMAT(lastlog, '%h:%i %p')) AS lastlog FROM user ORDER BY userid") as $val) {
+        $active = $val['active'] == "Y" ? "Yes" : "No";
+        $ret_html .= "<tr>"
+          .  "<td>" . $val['userid'] . "</td>"
+          .  "<td>" . ucwords($val['fullname']) . "</td>"
+          .  "<td align='center'>" . ucwords($val['role']) . "</td>"
+          .  "<td align='center'>" . ucwords($val['gender']) . "</td>"
+          .  "<td align='center'>" . $val['ic'] . "</td>"
+          .  "<td align='center'>" . $val['birthday'] . "</td>"
+          .  "<td align='center'>" . $val['lastlog'] . "</td>"
+          .  "<td align='center'>$active</td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+    }
+    return $ret_html;
+  }
+
+  function tc_active_list() {
     $ret_html = "<tr>
         <th>User ID</th>
         <th>Role</th>
@@ -344,13 +409,13 @@ class user {
         <th>Activate</th>
       </tr>";
     try {
-      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, A.role, A.fullname, CONCAT(C.userid, ' - ', C.fullname) AS student FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.active='N'") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, A.role, A.fullname, CONCAT(C.userid, ' - ', C.fullname) AS student FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.active='Y'") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['userid'] . "</td>"
           .  "<td>" . $val['role'] . "</td>"
           .  "<td>" . $val['fullname'] . "</td>"
           .  "<td>" . $val['student'] . "</td>"
-          .  "<td><button onclick=\"activate_user('" . $val['rowid'] . "')\">Activate</button></td>"
+          .  "<td><button class='btn_remove' style='display:block;margin:auto;' onclick=\"deactivate_user('" . $val['rowid'] . "')\">Deactivate</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {
@@ -393,7 +458,7 @@ class user {
         <th>Remove</th>
       </tr>";
     try {
-      foreach ($this->db->sql_select("SELECT A.rowid, A.type, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, date_format(A.create_date,'%d-%b-%y') AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.type, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, date_format(A.create_date,'%d %b %y') AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['student'] . "</td>"
           .  "<td>" . $val['heir'] . "</td>"
@@ -427,7 +492,7 @@ class user {
   function option_student() {
     try {
       $ret_html = "";
-      foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user WHERE role='student' ORDER BY userid") as $val) {
+      foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user WHERE `role`='student' AND active='Y' ORDER BY userid") as $val) {
         $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
         $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname</option>";
       }
@@ -442,7 +507,7 @@ class user {
   function option_heir() {
     try {
       $ret_html = "";
-      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.role='heir' ORDER BY userid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.userid, B.type, C.fullname AS student  FROM user A LEFT JOIN user_relate B ON A.rowid=B.heir_rowid LEFT JOIN user C ON B.student_rowid=C.rowid WHERE A.role='heir' AND active='Y' ORDER BY userid") as $val) {
         $remark = $val['type'] == "" ? " - " . $val['student'] . " " . $val['type'] : "";
         $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$remark</option>";
       }

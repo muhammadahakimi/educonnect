@@ -158,7 +158,59 @@ class exam {
     }
   }
 
-  function tc_ranking($exam) {
+  function form_score($rowid = '') {
+    $ret_html = "<tr>"
+      .  "<th>User ID</th>"
+      .  "<th>Fullname</th>"
+      .  "<th>Mark</th>"
+      ."</tr>";
+    try {
+      $this->rowid = $rowid;
+      if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+
+      foreach ($this->db->sql_select("SELECT B.userid, B.fullname, A.mark FROM exam_score A LEFT JOIN user B ON A.student_rowid=B.rowid WHERE A.exam_rowid='$this->rowid' ORDER BY B.userid") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>" . $val['userid'] . "</td>"
+          .  "<td>" . $val['fullname'] . "</td>"
+          .  "<td>" . $val['mark'] . "</td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      $ret_html .= "<tr><td colspan='20'>No Candidate</td></tr>";
+    }
+
+    return $ret_html;
+  }
+
+  function tc_candidate($rowid = '') {
+    $ret_html = "<tr>"
+      .  "<th>No</th>"
+      .  "<th>User ID</th>"
+      .  "<th>Fullname</th>"
+      .  "<th>Remove</th>"
+      ."</tr>";
+    try {
+      $this->rowid = $rowid;
+      if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+      $no = 1;
+      foreach ($this->db->sql_select("SELECT A.rowid, B.userid, B.fullname, A.mark FROM exam_score A LEFT JOIN user B ON A.student_rowid=B.rowid WHERE A.exam_rowid='$this->rowid' ORDER BY B.userid") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>" . $no . "</td>"
+          .  "<td>" . $val['userid'] . "</td>"
+          .  "<td>" . $val['fullname'] . "</td>"
+          .  "<td><button onclick=\"remove_candidate('" . $val['rowid'] . "')\">Remove</button></td>"
+          ."</tr>";
+        $no++;
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      $ret_html .= "<tr><td colspan='20'>No Candidate</td></tr>";
+    }
+    return $ret_html;
+  }
+
+  function tc_ranking($rowid = '') {
     $ret_html = "<tr>"
       .  "<th>No</th>"
       .  "<th>User ID</th>"
@@ -166,8 +218,10 @@ class exam {
       .  "<th>Mark</th>"
       ."</tr>";
     try {
+      $this->rowid = $rowid;
+      if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
       $no = 1;
-      foreach ($this->db->sql_select("SELECT B.userid, B.fullname, A.mark FROM exam_score A LEFT JOIN user B ON A.student_rowid=B.rowid WHERE A.exam_rowid='$this->rowid' ORDER BY mark DESC") as $val) {
+      foreach ($this->db->sql_select("SELECT B.userid, B.fullname, A.mark FROM exam_score A LEFT JOIN user B ON A.student_rowid=B.rowid WHERE A.exam_rowid='$this->rowid' ORDER BY A.mark DESC") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $no . "</td>"
           .  "<td>" . $val['userid'] . "</td>"
@@ -178,7 +232,7 @@ class exam {
       }
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());
-      $ret_html .= "<tr><td colspan='20'>No Record</td></tr>";
+      $ret_html .= "<tr><td colspan='20'>No Candidate</td></tr>";
     }
     return $ret_html;
   }

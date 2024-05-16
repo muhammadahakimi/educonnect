@@ -179,7 +179,7 @@ class user {
       if ($this->role == "") { throw new Exception("[Error] role not assigned"); }
       $this->fullname = ucwords($this->fullname);
       $this->userid = strtolower($this->userid);
-      if ($this->userid_exists()) { throw new Exception("[Error] userid is taken"); }
+      if ($this->userid_taken()) { throw new Exception("[Error] userid is taken"); }
       
       
       if (!$this->db->sql_command("UPDATE user SET userid='$this->userid', `role`='$this->role', fullname='$this->fullname', gender='$this->gender', ic='$this->ic', birthday='$this->birthday' WHERE rowid='$this->rowid'")) {
@@ -219,7 +219,7 @@ class user {
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
       if ($this->password == "") { throw new Exception("[Error] password not assigned"); }
       if ($this->role == "") { throw new Exception("[Error] role not assigned"); }
-      if ($this->userid_exists()) { throw new Exception("[Error] userid is taken"); }
+      if ($this->userid_taken()) { throw new Exception("[Error] userid is taken"); }
 
       $password_hash = sha1($password);
 
@@ -281,7 +281,7 @@ class user {
     }
   }
 
-  function userid_exists() {
+  function userid_taken() {
     try {
       if ($this->userid == "") { throw new Exception("[Error] userid not assigned"); }
       $data = $this->db->sql_select("SELECT rowid FROM user WHERE userid='$this->userid' AND rowid<>'$this->rowid'");

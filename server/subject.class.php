@@ -38,7 +38,8 @@ class subject {
   function create($name) {
     try {
       if (!$this->access()) { throw new Exception("[Error] Access Denied"); }
-      if ($name == "") { throw new Exception("[Error] name not assigned"); }
+      $this->name = $name;
+      if ($this->name == "") { throw new Exception("[Error] name not assigned"); }
       if ($this->name_taken()) { throw new Exception("[Warning] name is taken"); }
       $this->create_user = $this->user->rowid;
 
@@ -81,6 +82,34 @@ class subject {
       $this->add_error_msg($e->getMessage());
       return "";
     }
+  }
+
+  function tc_list() {
+    $ret_html = "<tr>"
+      .  "<th>ID</th>"
+      .  "<th>Subject Name</th>"
+      .  "<th>Create By</th>"
+      .  "<th>Create Date</th>"
+      .  "<th>Homework</th>"
+      .  "<th>Exam</th>"
+      ."</tr>";
+    try {
+      foreach ($this->db->sql_select("SELECT A.rowid, A.name, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date, CONCAT(B.userid, ' - ', B.fullname) AS create_by FROM `subject` A LEFT JOIN user B ON A.create_user=B.rowid") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>" . $val['rowid'] . "</td>"
+          .  "<td>" . $val['name'] . "</td>"
+          .  "<td>" . $val['create_by'] . "</td>"
+          .  "<td>" . $val['create_date'] . "</td>"
+          .  "<td><button onclick=\"homework('" . $val['rowid'] ."')\">Homework</button></td>"
+          .  "<td><button onclick=\"homework('" . $val['rowid'] ."')\">Exam</button></td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      $ret_html .= "<tr><td colspan='20'>No Class</td></tr>";
+    }
+
+    return $ret_html;
   }
 
   function access() {

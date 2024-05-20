@@ -381,7 +381,7 @@ class user {
         <th>Active</th>
       </tr>";
     try {
-      foreach ($this->db->sql_select("SELECT *, date_format(birthday,'%d-%b-%y') AS birthday, CONCAT(DATE_FORMAT(lastlog,'%d %b %y'), ' - ',TIME_FORMAT(lastlog, '%h:%i %p')) AS lastlog FROM user ORDER BY userid") as $val) {
+      foreach ($this->db->sql_select("SELECT *, date_format(birthday,'%d %b %Y') AS birthday, CONCAT(DATE_FORMAT(lastlog,'%d %b %y'), ' - ',TIME_FORMAT(lastlog, '%h:%i %p')) AS lastlog FROM user ORDER BY userid") as $val) {
         $active = $val['active'] == "Y" ? "Yes" : "No";
         $ret_html .= "<tr>"
           .  "<td>" . $val['userid'] . "</td>"

@@ -100,7 +100,7 @@ class user {
 
   function is_login() {
     try {
-      if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+      if ((session_status() !== PHP_SESSION_ACTIVE) && (session_id() === "")) { session_start(); }
       if (!isset($_SESSION['rowid'])) { throw new Exception("[Error] rowid not assigned"); }
       if (!isset($_SESSION['userid'])) { throw new Exception("[Error] userid not assigned"); }
       if (!isset($_SESSION['otp'])) { throw new Exception("[Error] otp not assigned"); }
@@ -322,8 +322,8 @@ class user {
     try {
       $ret_html = "";
       foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user ORDER BY userid") as $val) {
-        $fullname = $val['fullname'] == "" ? " - " . $val['fullname'] : "";
-        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname<option>";
+        $fullname = $val['fullname'] != "" ? " - " . $val['fullname'] : "";
+        $ret_html .= "<option value='" . $val['rowid'] . "'>" . $val['userid'] . "$fullname</option>";
       }
 
       return $ret_html;

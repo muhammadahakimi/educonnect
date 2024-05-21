@@ -55,6 +55,19 @@ class chat {
     }
 
     $this->htmtemp = new htmtemp();
+
+    $this->set_dir();
+  }
+
+  function set_dir() {
+    try {
+      if (is_dir("../resources/files")) { $this->dir = "../resources/files/"; }
+      if (is_dir("resources/files")) { $this->dir = "resources/files/"; }
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
   }
 
   function send($target, $to, $type, $data) {
@@ -113,9 +126,9 @@ class chat {
       if ($image['error'] !== 0 ) { throw new Exception("[Error] this image have error"); }
       date_default_timezone_set('Asia/Kuala_Lumpur');
       $this->image = sha1(date('Y-m-d H:i:s')) . "." . pathinfo($image['name'], PATHINFO_EXTENSION);
-      if (move_uploaded_file($image['tmp_name'], $this->dir . $this->image)) { throw new Exception("[Error] failed to move file"); }
+      if (!move_uploaded_file($image['tmp_name'], $this->dir.$this->image)) { throw new Exception("[Error] failed to move file: " . $this->dir.$this->image); }
 
-      return false;
+      return true;
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());
       return false;
@@ -127,9 +140,9 @@ class chat {
       if ($file['error'] !== 0 ) { throw new Exception("[Error] this file have error"); }
       date_default_timezone_set('Asia/Kuala_Lumpur');
       $this->file = sha1(date('Y-m-d H:i:s')) . "." . pathinfo($file['name'], PATHINFO_EXTENSION);
-      if (move_uploaded_file($file['tmp_name'], $this->dir . $this->file)) { throw new Exception("[Error] failed to move file"); }
+      if (!move_uploaded_file($file['tmp_name'], $this->dir.$this->file)) { throw new Exception("[Error] failed to move file: " . $this->dir.$this->file); }
 
-      return false;
+      return true;
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());
       return false;
@@ -175,11 +188,31 @@ class chat {
         LEFT JOIN user B ON to_user=B.rowid 
         LEFT JOIN user C ON A.from=C.rowid 
         LEFT JOIN `group` D ON A.to_group=D.rowid
-        WHERE A.from='$user' OR A.to_user='$user' ORDER BY A.rowid DESC";
+        LEFT JOIN group_member E ON D.rowid=E.group_rowid
+        WHERE A.from='$user' OR A.to_user='$user' OR D.create_user='$user' OR E.user_rowid='$user'
+        ORDER BY A.rowid DESC";
       foreach ($this->db->sql_select($sql) as $val) {
         //echo json_encode($val);
         if ($val['lastchat'] == "") { $val['lastchat'] = $this->get_lastchat($val['to_user']); }
         $ret_html .= $this->htmtemp->gen($dir, $val);
+      }
+
+      return $ret_html;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return "";
+    }
+  }
+
+  function option_user() {
+    try {
+      $this->user->is_login();
+      $ret_html = "";
+      foreach ($this->db->sql_select("SELECT rowid, userid, fullname FROM user ORDER BY userid") as $val) {
+        if ($val['rowid'] != $this->user->rowid) {
+          $fullname = $val['fullname'] != "" ? " - " . $val['fullname'] : "";
+          $ret_html .= "<option value=\"" . $val['rowid'] . "," . $val['userid'] . "\">" . $val['userid'] . "$fullname</option>";
+        }
       }
 
       return $ret_html;
@@ -225,12 +258,17 @@ class chat {
           WHEN A.type='file' THEN A.file
           WHEN A.type='homework' THEN A.homework_rowid
           ELSE ''
-        END AS content
+        END AS content,
+        A.type
         FROM chat A 
         LEFT JOIN user B ON A.from=B.rowid 
         WHERE (A.from='$from_user' AND A.to_user='$user') OR (A.from='$user' AND A.to_user='$from_user') OR A.to_group='$from_group' ORDER BY A.rowid";
+      $this->dir = "resources/files/";
       foreach ($this->db->sql_select($sql) as $val) {
         //echo json_encode($val);
+        if ($val['type'] == "image") {
+          $val['content'] = "<img class='img_chat' src='$this->dir" . $val['content'] . "'>";
+        }
         $ret_html .= $this->htmtemp->gen($dir, $val);
       }
 

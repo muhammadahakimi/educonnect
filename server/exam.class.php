@@ -2,20 +2,12 @@
 
 class exam {
   //Table exam
-  public $rowid = ''; //same as exam
-  public $name = '';
-  public $date = '';
-  public $subject_rowid = '';
-  public $create_date = '';
-  public $create_user = '';
-
-  //Table exam_score
-  public $score_rowid = ''; //exam_score.rowid
-  //public $exam_rowid = ''; //already declare as rowid
+  public $rowid = ''; 
+  public $class_rowid = '';
   public $student_rowid = '';
   public $mark = '';
-  public $score_create_date = ''; //exam_score.create_date
-  public $score_create_user = ''; //exam_score.create_user
+  public $create_date = '';
+  public $create_user = '';
 
   //Common
   private $db;
@@ -67,69 +59,19 @@ class exam {
     }
   }
 
-  function create($name, $date, $subject_rowid ) {
+  function set_score($class_rowid, $student_rowid, $mark) {
     try {
-      $this->name = $name;
-      $this->date = $date;
-      $this->subject_rowid = $subject_rowid;
       if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($this->user->role != 'teacher') { throw new Exception("[Warning] just teacher can update exam score"); }
       $this->create_user = $this->user->rowid;
-
-      if ($this->name == "") { throw new Exception("[Error] name not assigned"); }
-      if ($this->date == "") { throw new Exception("[Error] date not assigned"); }
-      if ($this->subject_rowid == "") { throw new Exception("[Error] subject_rowid not assigned"); }
-      if (is_numeric($this->subject_rowid)) { throw new Exception("[Error] Invalid subject_rowid"); }
-
-      if (!$this->db->sql_command("INSERT INTO exam (`name`,`date`,subject_rowid,create_user) VALUES ('$this->name','$this->date','$this->subject_rowid','$this->create_user')")) {
-        throw new Exception("[Error] failed to insert table exam");
-      }
-
-      return true;
-    } catch (Exception $e) {
-      $this->add_error_msg($e->getMessage());
-      return false;
-    }
-  }
-
-  function update($rowid, $name, $date, $subject_rowid ) {
-    try {
-      $this->rowid = $rowid;
-      $this->name = $name;
-      $this->date = $date;
-      $this->subject_rowid = $subject_rowid;
-      if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
-      $this->create_user = $this->user->rowid;
-
-      if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
-      if ($this->name == "") { throw new Exception("[Error] name not assigned"); }
-      if ($this->date == "") { throw new Exception("[Error] date not assigned"); }
-      if ($this->subject_rowid == "") { throw new Exception("[Error] subject_rowid not assigned"); }
-      if (is_numeric($this->subject_rowid)) { throw new Exception("[Error] Invalid subject_rowid"); }
-
-      if (!$this->db->sql_command("UPDATE exam SET `name`='$this->name', `date`='$this->date', subject_rowid='$this->subject_rowid', create_user='$this->create_user', create_date=NOW() WHERE rowid='$this->rowid'")) {
-        throw new Exception("[Error] failed to update table exam");
-      }
-
-      return true;
-    } catch (Exception $e) {
-      $this->add_error_msg($e->getMessage());
-      return false;
-    }
-  }
-
-  function set_score($student_rowid, $mark, $rowid = '') {
-    try {
-      $this->rowid = $rowid != "" ? $rowid : $this->rowid;
-      if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
-      $this->score_create_user = $this->user->rowid;
       
-      if ($this->score_exists($this->rowid, $student_rowid)) {
-        if (!$this->db->sql_command("UPDATE exaam_score SET mark='$mark', create_user='$this->score_create_user', create_date=NOW() WHERE rowid='$this->score_rowid'")) {
-          throw new Exception("[Error] failed to update table exam_score");
+      if ($this->exists($class_rowid, $student_rowid)) {
+        if (!$this->db->sql_command("UPDATE exam SET mark='$mark', create_user='$this->create_user', create_date=NOW() WHERE rowid='$this->rowid'")) {
+          throw new Exception("[Error] failed to update table exam");
         }
       } else {
-        if (!$this->db->sql_command("INSERT INTO exam_score (exam_rowid, student_rowid, mark, create_user) VALUES ('$this->rowid', '$student_rowid', '$mark', '$this->score_create_user')")) {
-          throw new Exception("[Error] failed to insert table exam_score");
+        if (!$this->db->sql_command("INSERT INTO exam (class_rowid, student_rowid, mark, create_user) VALUES ('$class_rowid', '$student_rowid', '$mark', '$this->create_user')")) {
+          throw new Exception("[Error] failed to insert table exam");
         }
       }      
 
@@ -140,14 +82,14 @@ class exam {
     }
   }
 
-  function score_exists($rowid, $student_rowid) {
+  function exists($class_rowid, $student_rowid) {
     try {
-      if ($rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+      if ($class_rowid == "") { throw new Exception("[Error] rowid not assigned"); }
       if ($student_rowid == "") { throw new Exception("[Error] studen_rowid not assigend"); }
       
-      $data = $this->db->sql_select("SELECT rowid FROM exam_score WHERE exam_rowid='$rowid' AND student_rowid='$student_rowid'");
+      $data = $this->db->sql_select("SELECT rowid FROM exam WHERE class_rowid='$class_rowid' AND student_rowid='$student_rowid'");
       if (count($data) > 0) {
-        $this->score_rowid = $data[0]['rowid'];
+        $this->rowid = $data[0]['rowid'];
         return true;
       } else {
         return false;
@@ -158,21 +100,47 @@ class exam {
     }
   }
 
-  function form_score($rowid = '') {
+  function form_score($class_rowid ) {
+    $ret_html = "";
+    try {
+      $this->class_rowid = $class_rowid;
+      if ($this->class_rowid == "") { throw new Exception("[Error] rowid not assigned"); }
+
+      foreach ($this->db->sql_select("SELECT A.student_rowid, B.userid, B.fullname, C.mark FROM class_student A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN exam C ON C.class_rowid='$this->class_rowid' AND C.student_rowid=A.student_rowid WHERE A.class_rowid='$this->class_rowid' ORDER BY B.userid;") as $val) {
+        $ret_html .= "<tr>"
+          .  "<td>User ID: " . $val['userid'] . "</td>"
+          .  "<td>Fullname: " . $val['fullname'] . "</td>"
+          .  "<td><input type='hidden' name='student_rowid' value='" . $val['student_rowid'] . "'>Mark: <input type='number' name='mark' value='" . $val['mark'] . "'</td>"
+          ."</tr>";
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      $ret_html .= "<tr><td colspan='20'>No Candidate</td></tr>";
+    }
+
+    return $ret_html;
+  }
+
+  function tc_list() {
     $ret_html = "<tr>"
-      .  "<th>User ID</th>"
-      .  "<th>Fullname</th>"
+      .  "<th>Class ID</th>"
+      .  "<th>Class</th>"
+      .  "<th>Subject</th>"
       .  "<th>Mark</th>"
+      .  "<th>Create Date</th>"
+      .  "<th>Create By</th>"
       ."</tr>";
     try {
-      $this->rowid = $rowid;
-      if ($this->rowid == "") { throw new Exception("[Error] rowid not assigned"); }
-
-      foreach ($this->db->sql_select("SELECT B.userid, B.fullname, A.mark FROM exam_score A LEFT JOIN user B ON A.student_rowid=B.rowid WHERE A.exam_rowid='$this->rowid' ORDER BY B.userid") as $val) {
+      if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
+      $user = $this->user->rowid;
+      foreach ($this->db->sql_select("SELECT C.rowid AS rowid, C.name AS `class`, D.name AS `name`, A.mark, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date, B.userid AS create_user FROM exam A LEFT JOIN user B ON A.create_user=B.rowid LEFT JOIN `class` C ON A.class_rowid=C.rowid LEFT JOIN subject D ON C.subject_rowid-D.rowid WHERE A.student_rowid='$user'") as $val) {
         $ret_html .= "<tr>"
-          .  "<td>" . $val['userid'] . "</td>"
-          .  "<td>" . $val['fullname'] . "</td>"
+          .  "<td>" . $val['rowid'] . "</td>"
+          .  "<td>" . $val['class'] . "</td>"
+          .  "<td>" . $val['name'] . "</td>"
           .  "<td>" . $val['mark'] . "</td>"
+          .  "<td>" . $val['create_date'] . "</td>"
+          .  "<td>" . $val['create_user'] . "</td>"
           ."</tr>";
       }
     } catch (Exception $e) {

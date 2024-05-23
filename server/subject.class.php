@@ -90,8 +90,6 @@ class subject {
       .  "<th>Subject Name</th>"
       .  "<th>Create By</th>"
       .  "<th>Create Date</th>"
-      .  "<th>Homework</th>"
-      .  "<th>Exam</th>"
       ."</tr>";
     try {
       foreach ($this->db->sql_select("SELECT A.rowid, A.name, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date, CONCAT(B.userid, ' - ', B.fullname) AS create_by FROM `subject` A LEFT JOIN user B ON A.create_user=B.rowid") as $val) {
@@ -100,8 +98,6 @@ class subject {
           .  "<td>" . $val['name'] . "</td>"
           .  "<td>" . $val['create_by'] . "</td>"
           .  "<td>" . $val['create_date'] . "</td>"
-          .  "<td><button onclick=\"homework('" . $val['rowid'] ."')\">Homework</button></td>"
-          .  "<td><button onclick=\"homework('" . $val['rowid'] ."')\">Exam</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {

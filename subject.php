@@ -82,8 +82,12 @@
     });
   }
 
-  function manage_class(class_rowid) {
-    location.replace("manage_class.php?class_rowid=" + class_rowid);
+  function manage_homework(subject_rowid) {
+    location.replace("manage_homework.php?subject=" + subject_rowid);
+  }
+
+  function manage_exam(subject_rowid) {
+    location.replace("manage_exam.php?subject=" + subject_rowid)
   }
 </script>
 </html>

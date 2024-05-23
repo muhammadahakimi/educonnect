@@ -38,7 +38,7 @@
   <button onclick="page('my_profile')">My Profile</button>
   <button onclick="page('manage_user')">Manage User</button>
   <button onclick="page('class')">Class</button>
-  <button onclick="page('exam')">Exam</button>
+  <button onclick="page('result_exam')">Result Exam</button>
   <button onclick="page('group')">Group</button>
   <button onclick="page('chat')">Chat</button>
 </body>

@@ -134,8 +134,8 @@ class classs{
           .  "<td>" . $val['teacher'] . "</td>"
           .  "<td>" . $val['student'] . "</td>"
           .  "<td><button onclick=\"manage_class('" . $val['rowid'] . "')\">Manage</button></td>"
-          .  "<td><button>Homework</button></td>"
-          .  "<td><button>Exam</button></td>"
+          .  "<td><button onclick=\"manage_homework('" . $val['rowid'] . "')\">Homework</button></td>"
+          .  "<td><button onclick=\"manage_exam('" . $val['rowid'] . "')\">Exam</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {

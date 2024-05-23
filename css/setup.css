@@ -98,3 +98,13 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom-right-radius: 10px;
 }
 
+
+.table3 {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table3 td, .table3 th {
+  padding: 5px;
+}

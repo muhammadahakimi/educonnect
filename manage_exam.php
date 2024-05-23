@@ -1,16 +1,17 @@
 <?php
   include 'server/user.class.php';
   include 'server/classs.class.php';
-  include 'server/subject.class.php';
+  include 'server/exam.class.php';
   $user = new user();
   $class = new classs();
-  $subject = new subject();
+  $exam = new exam();
 
   if (!$user->is_login()) { header("Location: login.php"); }
+  if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
-  <title>Class</title>
+  <title>Manage Exam</title>
   <link rel="stylesheet" href="css/setup.css">
   <script src="jquery/jquery.js"></script>
   <script src="js/setup.js"></script>
@@ -46,29 +47,47 @@
 </head>
 <body>
   <div>
-    <button onclick="page('index')">&#8592; Home</button>
-    <button onclick="page('subject')">Manage Subject</button>
-    <br><br>
-    <div>
-      <label>Create Class: </label>
-      <input id="input_class" autocomplete="off">
-      <label>Subject</label>
-      <select id="input_subject"><?php print $subject->option(); ?></select>
-      <button onclick="create()">Create</button>
-    </div>
+    <button onclick="page('class')">&#8592; Class</button>
     <br>
-    <h3 align="center">Subject List</h3>
-    <table id="table_class" class="table2"><?php print $class->tc_list(); ?></table>
+    <br>
+    <h3 align="center">Exam Student List</h3><br>
+    <table id="table_exam" class="table3"><?php print $exam->form_score($_GET['class']); ?></table>
+    <br>
+    <button onclick="save()">Save Changes</button>
   </div>
 </body>
 <script>
-  function create() {
+  var class_rowid = "<?php print $_GET['class'] ?>"; 
+
+  function check() {
+    var student_rowids = [];
+    var marks = [];
+    $('input[name="student_rowid"]').each(function(){
+      student_rowids.push($(this).val());
+    });
+    $('input[name="mark"]').each(function(){
+      marks.push($(this).val());
+    });
+
+    var list = [];
+
+    for (var i = 0; i < marks.length; i++) {
+      list.push({
+        "student_rowid": student_rowids[i],
+        "mark": marks[i]
+      });
+    }
+
+    console.table(list);
+    return list
+  }
+  function save() {
     var data = {};
-    data['name'] = $("#input_class").val();
-    data['subject_rowid'] = $("#input_subject").val();
+    data['class_rowid'] = class_rowid;
+    data['list'] = check();
     console.table(data);
     $.ajax({
-      url: 'server/create_class.php',
+      url: 'server/update_exam.php',
       type: 'post',
       data: data,
       dataType: 'JSON',
@@ -76,25 +95,11 @@
         console.log(response);
         if (response.result) {
           alert("Successful");
-          $("#input_class").val("");
-          $("#table_class > tbody").html(response.gui);
         } else {
           alert(response.reason);
         }
       }
     });
-  }
-
-  function manage_class(class_rowid) {
-    location.replace("manage_class.php?class_rowid=" + class_rowid);
-  }
-  
-  function manage_homework(class_rowid) {
-    location.replace("class_homework.php?class_rowid=" + class_rowid);
-  }
-
-  function manage_exam(class_rowid) {
-    location.replace("manage_exam.php?class=" + class_rowid)
   }
 </script>
 </html>

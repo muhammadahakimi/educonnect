@@ -1,16 +1,17 @@
 <?php
   include 'server/user.class.php';
   include 'server/classs.class.php';
-  include 'server/subject.class.php';
+  include 'server/homework.class.php';
   $user = new user();
   $class = new classs();
-  $subject = new subject();
+  $homework = new homework();
 
   if (!$user->is_login()) { header("Location: login.php"); }
+  if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
-  <title>Class</title>
+  <title>Manage Homework</title>
   <link rel="stylesheet" href="css/setup.css">
   <script src="jquery/jquery.js"></script>
   <script src="js/setup.js"></script>
@@ -46,55 +47,46 @@
 </head>
 <body>
   <div>
-    <button onclick="page('index')">&#8592; Home</button>
-    <button onclick="page('subject')">Manage Subject</button>
+    <button onclick="page('subject')">&#8592; Subject</button>
     <br><br>
     <div>
-      <label>Create Class: </label>
-      <input id="input_class" autocomplete="off">
-      <label>Subject</label>
-      <select id="input_subject"><?php print $subject->option(); ?></select>
+      <label>Create Subject: </label>
+      <input id="input_name" autocomplete="off" autocomplete="off">
+      <label> Date</label>
+      <input type="date" id="input_date" autocomplete="off">
       <button onclick="create()">Create</button>
     </div>
     <br>
-    <h3 align="center">Subject List</h3>
-    <table id="table_class" class="table2"><?php print $class->tc_list(); ?></table>
+    <h3 align="center">Homework List</h3>
+    <table id="table_homework" class="table2"><?php print $homework->tc_list($_GET['subject']); ?></table>
   </div>
 </body>
 <script>
+  var subject_rowid = "<?php print $_GET['subject'] ?>"; 
   function create() {
+    if ($("#input_name").val() == "") { $("#input_name").focus(); return false; }
+    if ($("#input_date").val() == "") { $("#input_date").focus(); return false; }
     var data = {};
-    data['name'] = $("#input_class").val();
-    data['subject_rowid'] = $("#input_subject").val();
+    data['subject_rowid'] = subject_rowid;
+    data['name'] = $("#input_name").val();
+    data['date'] = $("#input_date").val();
     console.table(data);
     $.ajax({
-      url: 'server/create_class.php',
+      url: 'server/create_exam.php',
       type: 'post',
       data: data,
       dataType: 'JSON',
       success: function (response) {
         console.log(response);
         if (response.result) {
+            $("#input_subject").val("");
           alert("Successful");
-          $("#input_class").val("");
-          $("#table_class > tbody").html(response.gui);
+          $("#table_exam > tbody").html(response.gui);
         } else {
           alert(response.reason);
         }
       }
     });
-  }
-
-  function manage_class(class_rowid) {
-    location.replace("manage_class.php?class_rowid=" + class_rowid);
-  }
-  
-  function manage_homework(class_rowid) {
-    location.replace("class_homework.php?class_rowid=" + class_rowid);
-  }
-
-  function manage_exam(class_rowid) {
-    location.replace("manage_exam.php?class=" + class_rowid)
   }
 </script>
 </html>

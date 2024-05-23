@@ -5,7 +5,6 @@
   $group = new group();
 
   if (!$user->is_login()) { header("Location: login.php"); }
-  if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>

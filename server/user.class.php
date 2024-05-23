@@ -4,6 +4,7 @@ class user {
   //Table user
   public $rowid = '';
   public $userid = '';
+  public $userid_new = '';
   public $password = '';
   public $otp = '';
   public $role = '';
@@ -182,7 +183,7 @@ class user {
       if ($this->userid_taken()) { throw new Exception("[Error] userid is taken"); }
       
       
-      if (!$this->db->sql_command("UPDATE user SET userid='$this->userid', `role`='$this->role', fullname='$this->fullname', gender='$this->gender', ic='$this->ic', birthday='$this->birthday' WHERE rowid='$this->rowid'")) {
+      if (!$this->db->sql_command("UPDATE user SET userid='$this->userid_new', `role`='$this->role', fullname='$this->fullname', gender='$this->gender', ic='$this->ic', birthday='$this->birthday' WHERE rowid='$this->rowid'")) {
         throw new Exception("[Error] failed to update table");
       }
 
@@ -379,6 +380,7 @@ class user {
         <th>Birthday</th>
         <th>Last Login</th>
         <th>Active</th>
+        <th>Chat</th>
       </tr>";
     try {
       foreach ($this->db->sql_select("SELECT *, date_format(birthday,'%d %b %Y') AS birthday, CONCAT(DATE_FORMAT(lastlog,'%d %b %y'), ' - ',TIME_FORMAT(lastlog, '%h:%i %p')) AS lastlog FROM user ORDER BY userid") as $val) {
@@ -392,6 +394,7 @@ class user {
           .  "<td align='center'>" . $val['birthday'] . "</td>"
           .  "<td align='center'>" . $val['lastlog'] . "</td>"
           .  "<td align='center'>$active</td>"
+          .  "<td align='center'><button onclick=\"open_chat('user','" . $val['rowid'] . "','" . $val['userid'] . "')\">Chat</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {
@@ -456,9 +459,11 @@ class user {
         <th>Create Date</th>
         <th>Create By</th>
         <th>Remove</th>
+        <th>Chat Student</th>
+        <th>Chat Heir</th>
       </tr>";
     try {
-      foreach ($this->db->sql_select("SELECT A.rowid, A.type, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
+      foreach ($this->db->sql_select("SELECT A.rowid, B.userid, A.type, C.rowid AS heir_rowid, C.userid AS heir_userid, CONCAT(B.userid, ' - ', B.fullname) AS student, CONCAT(C.userid, ' - ', C.fullname) AS heir, CONCAT(D.userid, ' - ', D.fullname) AS create_user, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date FROM user_relate A LEFT JOIN user B ON A.student_rowid=B.rowid LEFT JOIN user C ON A.heir_rowid=C.rowid LEFT JOIN user D ON A.create_user=D.rowid") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['student'] . "</td>"
           .  "<td>" . $val['heir'] . "</td>"
@@ -466,6 +471,8 @@ class user {
           .  "<td align='center'>" . $val['create_date'] . "</td>"
           .  "<td>" . $val['create_user'] . "</td>"
           .  "<td><button class='btn_remove' onclick=\"remove_heir('" . $val['rowid'] . "')\">Remove</button></td>"
+          .  "<td align='center'><button onclick=\"open_chat('user','" . $val['rowid'] . "','" . $val['userid'] . "')\">Chat Student</button></td>"
+          .  "<td align='center'><button onclick=\"open_chat('user','" . $val['heir_rowid'] . "','" . $val['heir_userid'] . "')\">Chat Heir</button></td>"
           ."</tr>";
       }
     } catch (Exception $e) {

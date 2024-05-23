@@ -102,16 +102,16 @@ class chat {
           if ($this->file == "") { throw new Exception("[Error] file not assigned"); }
           if (!$this->upload_file($this->file)) { throw new Exception("[Error] failed to upload file to server"); }
           break;
-        case "homework" :
-          $this->homework_rowid = $data;
-          if ($this->homework_rowid == "") { throw new Exception("[Error] homework_rowid not assigned"); }
-          break;
         default :
           throw new Exception("[Error] Invalid type");
       }
 
-      if (!$this->db->sql_command("INSERT INTO chat (`from`, `to_user`, `to_group`, `type`, `text`, `image`, `file`, `homework_rowid`) VALUES ('$this->from', '$this->to_user', '$this->to_group', '$this->type', '$this->text', '$this->image', '$this->file', '$this->homework_rowid')")) {
+      if (!$this->db->sql_command("INSERT INTO chat (`from`, `to_user`, `to_group`, `type`, `text`, `image`, `file`) VALUES ('$this->from', '$this->to_user', '$this->to_group', '$this->type', '$this->text', '$this->image', '$this->file')")) {
         throw new Exception("[Error] failed to insert table chat");
+      }
+
+      if (!$this->update_unread($target, $to)) {
+        throw new Exception("[Error] failed to udpate_unread");
       }
 
       return true;
@@ -189,10 +189,12 @@ class chat {
         LEFT JOIN user C ON A.from=C.rowid 
         LEFT JOIN `group` D ON A.to_group=D.rowid
         LEFT JOIN group_member E ON D.rowid=E.group_rowid
-        WHERE A.from='$user' OR A.to_user='$user' OR D.create_user='$user' OR E.user_rowid='$user'
+        LEFT JOIN chat_unread F ON F.user_rowid=''
+        WHERE A.from='$user' OR A.to_user='$user' OR E.user_rowid='$user'
         ORDER BY A.rowid DESC";
       foreach ($this->db->sql_select($sql) as $val) {
         //echo json_encode($val);
+        $val['unread'] = $this->unread($val['target'], $val['to']);
         if ($val['lastchat'] == "") { $val['lastchat'] = $this->get_lastchat($val['to_user']); }
         $ret_html .= $this->htmtemp->gen($dir, $val);
       }
@@ -242,6 +244,11 @@ class chat {
       if (is_file("../template/chatbox.html")) {
         $dir = "../template/chatbox.html";
       }
+
+      if (!$this->clear_unread($target, $to)) {
+        throw new Exception("[Error] failed to clear unread");
+      }
+
       $ret_html = "";
       $sql = "SELECT
         CASE
@@ -256,7 +263,6 @@ class chat {
           WHEN A.type='text' THEN A.text
           WHEN A.type='image' THEN A.image
           WHEN A.type='file' THEN A.file
-          WHEN A.type='homework' THEN A.homework_rowid
           ELSE ''
         END AS content,
         A.type
@@ -269,6 +275,9 @@ class chat {
         if ($val['type'] == "image") {
           $val['content'] = "<img class='img_chat' src='$this->dir" . $val['content'] . "'>";
         }
+        if ($val['type'] == "file") {
+          $val['content'] = "<a style='font-size:16px;' href='$this->dir" . $val['content'] . "' target='_blank'>" . $val['content'] . "</a>";
+        }
         $ret_html .= $this->htmtemp->gen($dir, $val);
       }
 
@@ -276,6 +285,105 @@ class chat {
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());
       return "";
+    }
+  }
+
+  function unread($target, $to) {
+    try {
+      if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($target == "") { throw new Exception("[Error] target not assigned"); }
+      if ($to == "") { throw new Exception("[Error] to not assigend"); }
+      if (!is_numeric($to)) { throw new Exception("[Error] Invalid to"); }
+      $user = $this->user->rowid;
+      if ($target == 'user') {
+        $data = $this->db->sql_select("SELECT qty FROM chat_unread WHERE user_rowid='$user' AND from_rowid='$to'");
+      } else if ($target == 'group') {
+        $data = $this->db->sql_select("SELECT qty FROM chat_unread WHERE user_rowid='$user' AND group_rowid='$to'");
+      } else {
+        throw new Exception("[Error] Invalid target");
+      }
+
+      if (count($data) == 0) {
+        return '';
+      } else {
+        return $data[0]['qty'] == 0 ? '' : $data[0]['qty'];
+      }
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return '';
+    }
+  }
+
+  function update_unread($target, $to) {
+    try {
+      if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($target == "") { throw new Exception("[Error] target not assigned"); }
+      if ($to == "") { throw new Exception("[Error] to not assigend"); }
+      if (!is_numeric($to)) { throw new Exception("[Error] Invalid to"); }
+      if ($target == 'user') {
+        $from_rowid = $this->user->rowid;
+        $data = $this->db->sql_select("SELECT rowid FROM chat_unread WHERE user_rowid='$to' AND from_rowid='$from_rowid'");
+        if (count($data) == 0) {
+          if (!$this->db->sql_command("INSERT INTO chat_unread (user_rowid, from_rowid) VALUES ('$to', '$from_rowid')")) {
+            throw new Exception("[Error] failed to insert table chat_unread");
+          }
+          $data = $this->db->sql_select("SELECT rowid FROM chat_unread WHERE user_rowid='$to' AND from_rowid='$from_rowid'");
+        }
+        $rowid = $data[0]['rowid'];
+        if (!$this->db->sql_command("UPDATE chat_unread SET qty=qty+1, `date`=NOW() WHERE rowid='$rowid'")) {
+          throw new Exception("[Error] failed to update table chat_unread");
+        }
+      } else if ($target == 'group') {
+        foreach ($this->db->sql_select("SELECT user_rowid FROM group_member WHERE group_rowid='$to'") as $val) {
+          $user_rowid = $val['user_rowid'];
+          $data = $this->db->sql_select("SELECT rowid FROM chat_unread WHERE user_rowid='$user_rowid' AND group_rowid='$to'");
+          if (count($data) == 0) {
+            if (!$this->db->sql_command("INSERT INTO chat_unread (user_rowid, group_rowid) VALUES ('$user_rowid', '$to')")) {
+              throw new Exception("[Error] failed to insert table chat_unread");
+            }
+            $data = $this->db->sql_select("SELECT rowid FROM chat_unread WHERE user_rowid='$user_rowid' AND group_rowid='$to'");
+          }
+          $rowid = $data[0]['rowid'];
+          if (!$this->db->sql_command("UPDATE chat_unread SET qty=qty+1, `date`=NOW() WHERE rowid='$rowid'")) {
+            throw new Exception("[Error] failed to update table chat_unread");
+          }
+        }
+        
+      } else {
+        throw new Exception("[Error] Invalid target");
+      }
+
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
+    }
+  }
+
+  function clear_unread($target, $to) {
+    try {
+      if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
+      if ($target == "") { throw new Exception("[Error] target not assigned"); }
+      if ($to == "") { throw new Exception("[Error] to not assigend"); }
+      if (!is_numeric($to)) { throw new Exception("[Error] Invalid to"); }
+      $user = $this->user->rowid;
+
+      if ($target == 'user') {
+        if (!$this->db->sql_command("UPDATE chat_unread SET qty=0, `date`=NOW() WHERE user_rowid='$user' AND from_rowid='$to'")) {
+          throw new Exception("[Error] failed to update table chat_unread");
+        }
+      } else if ($target == 'group') {
+        if (!$this->db->sql_command("UPDATE chat_unread SET qty=0, `date`=NOW() WHERE user_rowid='$user' AND group_rowid='$to'")) {
+          throw new Exception("[Error] failed to update table chat_unread");
+        }
+      } else {
+        throw new Exception("[Error] Invalid Target");
+      }
+
+      return true;
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return false;
     }
   }
 

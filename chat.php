@@ -167,6 +167,8 @@
     }
 
     #details {
+      display: flex;
+      justify-content: space-between;
       background: skyblue;
       padding: 10px;
     }
@@ -230,32 +232,16 @@
         <img class="btn_icon" src="resources/icons/home.svg" onclick="page('index')">
         <img class="btn_icon" src="resources/icons/add_comment.svg" onclick="open_divCreateChat()">
       </div>
-      <div>
+      <div id="div_list">
         <?php print $chat->html_list(); ?>
       </div>
     </div>
     <div id="box">
       <div id="details">
         <p>Please select contact</p>
+        <!-- <button id="btn_manage" onclick="open_manage()">Manage</button> -->
       </div>
       <div id="chat">
-        
-        <!--<div class="chat_you">
-          <p>You</p>
-          <p>message be here</p>
-        </div>
-        <div class="chat_you">
-          <p>You</p>
-          <p>message be here message be here message be here message be here message be here message be here message be here message be here message be here message be here message be here message be here </p>
-        </div>
-        <div class="chat_other">
-          <p>Other</p>
-          <p>message be here message be here message be here message be here message be here message be here message be here message be here message be here message be here message be here message be here </p>
-        </div>
-        <div class="chat_you">
-          <p>You</p>
-          <p>message be here</p>
-        </div>-->
       </div>
       <div id="input">
         <input id="input_text" type="text" autocomplete="off">
@@ -294,6 +280,27 @@
   var lastupdate = "<?php print $chat->lastupdate; ?>";
   var target = '';
   var to = '';
+  <?php if (isset($_GET['target']) && isset($_GET['to']) && isset($_GET['name'])) { print "open_chat('" . $_GET['target'] . "','" . $_GET['to'] . "','" . $_GET['name'] . "')"; } ?>
+  
+  $("#input_text").keypress(function (event) {
+    if (event.keyCode === 13) {
+      send_text();
+    }
+  });
+
+  function open_manage() {
+    if (target == '' && to == '') { alert("Please select contact"); return false; }
+    if (target == 'group') { open_divManageGroup(); }
+  }
+
+  function open_divManageGroup() {
+    $("#divManageGroup").css('display','flex');
+  }
+
+  function close_divManageGroup() {
+    $("#divManageGroup").css('display','none');
+  }
+
   function open_divCreateChat() {
     $("#divCreateChat").css('display', 'flex');
   }
@@ -343,6 +350,7 @@
         console.log(response);
         if (response.result) {
           $("#chat").html(response.gui);
+          $("#div_list").html(response.gui_list);
           $("#chat").animate({ scrollTop:'999999' }, 'fast');
         } else {
           alert(response.reason);
@@ -352,7 +360,7 @@
   }
   function send_text() {
     if ($("#input_text").val() == '') { $("#input_text").focus(); return false; }
-    if (target == '' && to == '') { alert("Please select contact"); return false;}
+    if (target == '' && to == '') { alert("Please select contact"); return false; }
     var data = {};
     data['target'] = target;
     data['to'] = to;
@@ -368,6 +376,8 @@
         console.log(response);
         if (response.result) {
           $("#chat").html(response.gui);
+          $("#div_list").html(response.gui_list);
+          $("#chat").animate({ scrollTop:'999999' }, 'fast');
           $("#input_text").val("");
         } else {
           alert(response.reason);
@@ -390,14 +400,49 @@
       url: 'server/send_chat.php',
       type: 'post',
       data: formData,
-      processData: false, // Prevent jQuery from automatically processing the data
+      processData: false,
       contentType: false,
       dataType: 'JSON',
       success: function (response) {
         console.log(response);
         if (response.result) {
           $("#chat").html(response.gui);
+          $("#div_list").html(response.gui_list);
+          $("#chat").animate({ scrollTop:'999999' }, 'fast');
           $("#input_text").val("");
+          close_divSendImage();
+        } else {
+          alert(response.reason);
+        }
+      }
+    });
+  }
+
+  function send_file() {
+    if ($("#input_file").val() == '') { $("#input_file").focus(); return false; }
+    if (target == '' && to == '') { alert("Please select contact"); return false;}
+    var formData = new FormData(); // Create FormData object
+    var file = document.getElementById('input_file').files[0];
+    formData.append('target', target);
+    formData.append('to', to);
+    formData.append('type', 'file');
+    formData.append('file', file);
+    console.table(formData);
+    $.ajax({
+      url: 'server/send_chat.php',
+      type: 'post',
+      data: formData,
+      processData: false,
+      contentType: false,
+      dataType: 'JSON',
+      success: function (response) {
+        console.log(response);
+        if (response.result) {
+          $("#chat").html(response.gui);
+          $("#div_list").html(response.gui_list);
+          $("#chat").animate({ scrollTop:'999999' }, 'fast');
+          $("#input_text").val("");
+          close_divSendFile();
         } else {
           alert(response.reason);
         }

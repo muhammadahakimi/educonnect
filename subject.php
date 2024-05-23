@@ -47,7 +47,7 @@
 </head>
 <body>
   <div>
-    <button onclick="page('index')">&#8592; Home</button>
+    <button onclick="page('class')">&#8592; Class</button>
     <br><br>
     <div>
       <label>Create Subject: </label>

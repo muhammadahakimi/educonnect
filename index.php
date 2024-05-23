@@ -11,8 +11,16 @@
   <script src="jquery/jquery.js"></script>
   <script src="js/setup.js"></script>
   <style>
+    body {
+      display: flex;
+      gap: 10px;
+      padding: 50px;
+    }
     button {
-      padding: 7px;
+      display: block;
+      padding: 20px;
+      font-size: 20px;
+      height: fit-content;
       border-radius: 5px;
       border: 2px solid dodgerblue;
       background: dodgerblue;
@@ -31,6 +39,7 @@
   <button onclick="page('manage_user')">Manage User</button>
   <button onclick="page('class')">Class</button>
   <button onclick="page('exam')">Exam</button>
+  <button onclick="page('group')">Group</button>
   <button onclick="page('chat')">Chat</button>
 </body>
 <script>

@@ -69,6 +69,18 @@
   </div>
 </body>
 <script>
+  $("#input_userid").keypress(function (event) {
+    if (event.keyCode === 13) {
+      $("#input_password").focus();
+    }
+  });
+
+  $("#input_password").keypress(function (event) {
+    if (event.keyCode === 13) {
+      login();
+    }
+  });
+
   function login() {
     if ($("#input_userid").val() == "") { $("#input_userid").focus(); return false; }
     if ($("#input_password").val() == "") { $("#input_password").focus(); return false; }

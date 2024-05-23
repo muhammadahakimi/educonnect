@@ -9,7 +9,7 @@ try {
   if (!isset($_POST['ic'])) { throw new Exception("[Error] ic not found"); }
   if (!isset($_POST['birthday'])) { throw new Exception("[Error] birthday not found"); }
   
-  $user->userid = $_POST['userid'];
+  $user->userid_new = $_POST['userid'];
   $user->fullname = $_POST['fullname'];
   $user->gender = $_POST['gender'];
   $user->ic = $_POST['ic'];

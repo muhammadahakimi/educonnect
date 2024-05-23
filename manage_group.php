@@ -1,13 +1,18 @@
 <?php
   include 'server/user.class.php';
+  include 'server/group.class.php';
   $user = new user();
+  $group = new group();
+
+  if (!isset($_GET['rowid'])) { header("Location: group.php?alert=not_found"); }
+  if ($_GET['rowid'] == "" || !is_numeric($_GET['rowid'])) { header("Location: group.php?alert=not_found"); }
 
   if (!$user->is_login()) { header("Location: login.php"); }
   if ($user->role != "teacher") { header("Location: access_denied.php"); }
 ?>
 <html>
 <head>
-  <title>Heir</title>
+  <title>Manage Group</title>
   <link rel="stylesheet" href="css/setup.css">
   <script src="jquery/jquery.js"></script>
   <script src="js/setup.js"></script>
@@ -40,12 +45,6 @@
       border: 1px solid gray;
     }
 
-    #form {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
     .btn_remove {
       border: 2px solid red;
       background: red;
@@ -60,38 +59,32 @@
 </head>
 <body>
   <div>
-    <button onclick="page('manage_user')">&#8592; Manage User</button>
-    <div id="form">
-      <label>Student</label>
-      <select id="input_student"><?php print $user->option_student(); ?></select> 
-      <label>Heir</label>
-      <select id="input_heir"><?php print $user->option_heir(); ?></select>
-      <label>Type</label>
-      <select id="input_type">
-        <option value="father">Father</option>
-        <option value="mother">Mother</option>
-        <option value="sibling">Sibling</option>
-        <option value="other">Other</option>
-      </select>
-      <button onclick="set_heir()">Set Heir</button>
+    <button onclick="page('group')">&#8592; Group</button>
+    <br><br>
+    <div>
+      <label>Add Group Member</label>
+      <select id="input_user"><?php print $user->option_user(); ?></select>
+      <button onclick="add_member()">Add</button>
     </div>
-    <h3 align="center">Student Heir List</h3>
-    <table id="table_relate" class="table2"><?php print $user->tc_user_relate_list(); ?></table>
+    <h3 align="center">Class Member List</h3>
+    <table id="table_group" class="table2"><?php print $group->tc_member_list($_GET['rowid']); ?></table>
   </div>
 </body>
 <script>
+  var group_rowid = "<?php print $_GET['rowid']; ?>";
+
   function open_chat(target, to, name) {
     location.replace("chat.php?target="+target+"&to="+to+"&name="+name);
   }
-
-  function set_heir() {
+  
+  function add_member() {
+    if ($("#input_user").val() == "") { $("#input_user").focus(); return false; }
     var data = {};
-    data['student'] = $("#input_student").val();
-    data['heir'] = $("#input_heir").val();
-    data['type'] = $("#input_type").val();
+    data['rowid'] = group_rowid;
+    data['user'] = $("#input_user").val();
     console.table(data);
     $.ajax({
-      url: 'server/set_heir.php',
+      url: 'server/add_member.php',
       type: 'post',
       data: data,
       dataType: 'JSON',
@@ -99,7 +92,7 @@
         console.log(response);
         if (response.result) {
           alert("Successful");
-          $("#table_relate > tbody").html(response.gui);
+          $("#table_group > tbody").html(response.gui);
         } else {
           alert(response.reason);
         }
@@ -107,12 +100,13 @@
     });
   }
 
-  function remove_heir(rowid) {
+  function remove_member(rowid) {
     var data = {};
+    data['group_rowid'] = group_rowid;
     data['rowid'] = rowid;
     console.table(data);
     $.ajax({
-      url: 'server/remove_heir.php',
+      url: 'server/remove_member.php',
       type: 'post',
       data: data,
       dataType: 'JSON',
@@ -120,7 +114,7 @@
         console.log(response);
         if (response.result) {
           alert("Successful");
-          $("#table_relate > tbody").html(response.gui);
+          $("#table_group > tbody").html(response.gui);
         } else {
           alert(response.reason);
         }

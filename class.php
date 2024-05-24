@@ -47,9 +47,9 @@
 <body>
   <div>
     <button onclick="page('index')">&#8592; Home</button>
-    <button onclick="page('subject')">Manage Subject</button>
+    <button <?php if ($user->role != 'teacher') { print "style='display: none'"; } ?> onclick="page('subject')">Manage Subject</button>
     <br><br>
-    <div>
+    <div <?php if ($user->role != 'teacher') { print "style='display: none'"; } ?>>
       <label>Create Class: </label>
       <input id="input_class" autocomplete="off">
       <label>Subject</label>
@@ -57,7 +57,8 @@
       <button onclick="create()">Create</button>
     </div>
     <br>
-    <h3 align="center">Subject List</h3>
+    <h3 align="center">Class List</h3>
+    <br>
     <table id="table_class" class="table2"><?php print $class->tc_list(); ?></table>
   </div>
 </body>
@@ -90,7 +91,7 @@
   }
   
   function manage_homework(class_rowid) {
-    location.replace("class_homework.php?class_rowid=" + class_rowid);
+    location.replace("homework_list.php?class=" + class_rowid);
   }
 
   function manage_exam(class_rowid) {

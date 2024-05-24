@@ -115,28 +115,25 @@ class classs{
   }
 
   function tc_list() {
+    $this->user->is_login();
+    $header = $this->user->role == "teacher" ? "<th>Manage</th><th>Homework</th><th>Exam</th>" : "";
     $ret_html = "<tr>"
       .  "<th>ID</th>"
       .  "<th>Name</th>"
       .  "<th>Subject</th>"
       .  "<th>Teacher</th>"
       .  "<th>Total Student</th>"
-      .  "<th>Manage</th>"
-      .  "<th>Homework</th>"
-      .  "<th>Exam</th>"
-      ."</tr>";
+      ."$header</tr>";
     try {
       foreach ($this->db->sql_select("SELECT A.rowid, A.name, CONCAT(B.userid, ' - ', B.fullname) AS teacher, C.name AS `subject`, (SELECT COUNT(*) FROM class_student WHERE class_rowid=A.rowid) AS student FROM class A LEFT JOIN user B ON A.teacher_rowid=B.rowid LEFT JOIN `subject` C ON A.subject_rowid=C.rowid") as $val) {
+        $btn = $this->user->role == "teacher" ? "<td><button onclick=\"manage_class('" . $val['rowid'] . "')\">Manage</button></td><td><button onclick=\"manage_homework('" . $val['rowid'] . "')\">Homework</button></td><td><button onclick=\"manage_exam('" . $val['rowid'] . "')\">Exam</button></td>" : "";
         $ret_html .= "<tr>"
           .  "<td>" . $val['rowid'] . "</td>"
           .  "<td>" . $val['name'] . "</td>"
           .  "<td>" . $val['subject'] . "</td>"
           .  "<td>" . $val['teacher'] . "</td>"
           .  "<td>" . $val['student'] . "</td>"
-          .  "<td><button onclick=\"manage_class('" . $val['rowid'] . "')\">Manage</button></td>"
-          .  "<td><button onclick=\"manage_homework('" . $val['rowid'] . "')\">Homework</button></td>"
-          .  "<td><button onclick=\"manage_exam('" . $val['rowid'] . "')\">Exam</button></td>"
-          ."</tr>";
+          ."$btn</tr>";
       }
     } catch (Exception $e) {
       $this->add_error_msg($e->getMessage());

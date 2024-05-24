@@ -69,6 +69,7 @@
   </div>
 </body>
 <script>
+  $("#input_userid").focus();
   $("#input_userid").keypress(function (event) {
     if (event.keyCode === 13) {
       $("#input_password").focus();

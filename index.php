@@ -31,9 +31,15 @@
       background: white;
       color: dodgerblue;
     }
+
+    img {
+      display: block;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
+  <h1>EduConnect</h1>
   <button onclick="page('logout')">Logout</button>
   <button onclick="page('my_profile')">My Profile</button>
   <button onclick="page('manage_user')">Manage User</button>
@@ -42,6 +48,7 @@
   <button onclick="page('group')">Group</button>
   <?php if ($user->role == "student") { print "<button onclick=\"page('my_homework')\">My Homework</button>"; } ?>
   <button onclick="page('chat')">Chat</button>
+  <img src="resources/images/background.jpg">
 </body>
 <script>
   

@@ -133,7 +133,8 @@ class exam {
     try {
       if (!$this->user->is_login()) { throw new Exception("[Warning] Please login first"); }
       $user = $this->user->rowid;
-      foreach ($this->db->sql_select("SELECT C.rowid AS rowid, C.name AS `class`, D.name AS `name`, A.mark, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date, B.userid AS create_user FROM exam A LEFT JOIN user B ON A.create_user=B.rowid LEFT JOIN `class` C ON A.class_rowid=C.rowid LEFT JOIN subject D ON C.subject_rowid-D.rowid WHERE A.student_rowid='$user'") as $val) {
+      if ($this->user->role == 'heir') { $user = $this->user->get_student_heir(); }
+      foreach ($this->db->sql_select("SELECT C.rowid AS rowid, C.name AS `class`, D.name AS `name`, A.mark, CONCAT(DATE_FORMAT(A.create_date,'%d %b %y'), ' - ',TIME_FORMAT(A.create_date, '%h:%i %p')) AS create_date, B.userid AS create_user FROM exam A LEFT JOIN user B ON A.create_user=B.rowid LEFT JOIN `class` C ON A.class_rowid=C.rowid LEFT JOIN `subject` D ON C.subject_rowid=D.rowid WHERE A.student_rowid='$user'") as $val) {
         $ret_html .= "<tr>"
           .  "<td>" . $val['rowid'] . "</td>"
           .  "<td>" . $val['class'] . "</td>"

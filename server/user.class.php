@@ -481,6 +481,17 @@ class user {
     return $ret_html;
   }
 
+  function get_student_heir() {
+    try {
+      $data = $this->db->sql_select("SELECT student_rowid FROM user_relate WHERE heir_rowid='$this->rowid'");
+      if (count($data) == 0) { throw new Exception("[Error] not found"); }
+      return $data[0]['student_rowid'];
+    } catch (Exception $e) {
+      $this->add_error_msg($e->getMessage());
+      return 0;
+    }
+  }
+
   function option_teacher() {
     try {
       $ret_html = "";
